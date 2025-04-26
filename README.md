@@ -1,80 +1,113 @@
 # Applicazione Strutture Ricettive
+Versione con supporto TCP interattivo e UDP, logging dettagliato, parsing robusto del CSV e gestione comandi da terminale.
+
 **DESCRIZIONE**
 
-Questo progetto implementa un'applicazione client‑server in Java per la consultazione remota di un file CSV contenente l'elenco delle strutture ricettive della Regione Piemonte. Il server offre sia interfacce TCP che UDP per ricevere comandi di ricerca e filtro; il client consente all'utente di selezionare il protocollo, inviare richieste e visualizzare i risultati.
+Un client–server Java che permette la consultazione remota di un elenco di strutture ricettive (CSV Regione Piemonte). Offre:
 
-**REQUISITI**
-
-- Java 8 (o superiore)
-- Ambiente di sviluppo Java
-- File CSV: Regione-Piemonte---Elenco-delle-strutture-ricettive.csv
+- Server TCP interattivo: prompt >>>, comandi help/exit, logging connessioni client (IP, porta).
+- Server UDP frammentato: risposte suddivise in pacchetti da 1024 byte, marcatore __ END __.
+- Client Java multi‐protocollo (TCP/UDP) con invio automatico di help su UDP per generare subito log lato server.
+- Parsing CSV con ; come delimitatore, quote handling, e sostituzione di campi vuoti con NON_PRESENTE.
+- Indicizzazione get_row in input 1-based → 0-based internamente.
 
 **STRUTTURA DEL PROGETTO**
 
-**Server**
- 
-/server/Protocollo.java     
-/server/StrutturaRicettiva.java     
-/server/GestoreCSV.java     
-/server/ThreadClientHandler.java        
-/server/ServerStrutture.java  
 
-**Client**
 
-/client/ClientStrutture.java    
-/client/GestioneClient.java
+    src   
+        server
+            src
+                Protocollo.java
+                StrutturaRicettiva.java   
+                GestoreCSV.java    
+                ThreadClientHandler.java
+                ServerStrutture.java  
+            Regione-Piemonte---Elenco-delle-strutture-ricettive.csv    
+        client
+            src
+                ClientStrutture.java
+                GestioneClient.java
 
-**CONFIGURAZIONE**
+**COMPLIAZIONE**
 
-1. Copia il file CSV nella cartella di progetto
-2. Se necessario, rinomina o modifica il percorso in fase di esecuzione.
+Esegui da terminale (root del progetto):
 
-IMPORTAZIONE E COMPILAZIONE
-
-1. Avvia il tuo compilatore e seleziona File → New → Project
-2. Scegli la cartella radice del progetto.
-3. Crea i progetti server e client nelle rispettive cartelle src e incolla al loro interno i file Java.
-4. Aggiungi il CSV all'interno della cartella server.
-5. Verifica che il progetto compili senza errori.
+    mkdir -p out    
+    javac -d out src/server/*.java src/client/*.java
 
 **ESECUZIONE**
 
-**Server**
+Avvio Server
 
-nel terminale:   
-cd <progetto>/server    
-java -cp . server.ServerStrutture <percorso_csv> [tcp_port] [udp_port]
+    cd out  
+    java server.ServerStrutture [<csvPath>] [<tcpPort>] [<udpPort>]
 
-- <percorso_csv>: path al file CSV (es. data/Regione-Piemonte---Elenco-delle-strutture-ricettive.csv)
-- [tcp_port]: porta TCP (default 1050)
-- [udp_port]: porta UDP (default 3030)
+- csvPath (opzionale): percorso al CSV (default src/server/Regione-Piemonte---Elenco-delle-strutture-ricettive.csv).
+- tcpPort (opzionale): porta TCP (default 1050).
+- udpPort (opzionale): porta UDP (default 3030).
 
-**Client**
+Il server stamperà:
 
-nel terminale:  
-cd <progetto>/client    
-java -cp . client.ClientStrutture
+    CSV: [<csvPath>]  
+    Porte: TCP=[<tcpPort>]  UDP=[<udpPort>]   
+    Server avviato (TCP[<tcpPort>]  UDP[<udpPort>])
 
-Il client chiederà IP, protocollo (tcp/udp) e avvierà la sessione interattiva.
+CONNESSIONE TCP (Telnet)
 
-**PROTOCOLLO E COMANDI DISPONIBILI**
+    telnet localhost (o 127.0.0.1) 1050
 
-- tutti: restituisce tutte le strutture
-- num_strutture: numero totale di record
-- get_row: restituisce la riga n (0-based)
-- comuni: elenco dei comuni distinti
-- tipologie: elenco delle tipologie distinte
-- filtra comune:
-- filtra provincia:
-- filtra stelle:
-- filtra atl:
-- filtra tipologia:
-- filtra marchio:<Q/Yes/Ecolabel>
-- disabili: strutture accessibili a persone con disabilità
-- aria condizionata
-- carte: strutture che accettano carta di credito
-- animali: strutture che accettano animali
-- parcheggi: strutture con parcheggio
-- cerca nome:
-- help: mostra questo elenco
-- exit: termina la connessione
+Il server invia un messaggio di benvenuto e prompt:
+
+    Benvenuto nel server Strutture Ricettive!   
+    Digita 'help' per l'elenco comandi, 'exit' per chiudere.    
+    >>>
+
+Connessione UDP (Client Java o Netcat)
+
+    # con client Java:   
+    cd out    
+    java client.ClientStrutture   
+    # selezionare protocollo udp    
+
+Il client Java in modalità UDP invia automaticamente help all’avvio per generare subito il logging lato server.
+
+**COMANDI DISPONIBILI (TCP/UDP)**
+
+- tutti                   : mostra tutte le strutture
+- num_strutture           : numero totale di strutture
+- get_row <n>             : dettaglio riga n (1‑based)
+- comuni, tipologie     : elenchi distinti
+- filtra comune:<nome>    : filtra per comune
+- filtra provincia:<sigla>: filtra per provincia
+- filtra stelle:<n>       : filtra per stelle
+- filtra atl:<atl>        : filtra per ATL
+- filtra tipologia:<tipo> : filtra per tipologia
+- filtra marchio:<Q/Yes/Ecolabel>: filtra per marchio
+- disabili, aria condizionata, carte, animali, parcheggio
+- cerca nome:<parola>     : ricerca in nome struttura
+- help                    : mostra questo elenco
+- exit                    : termina la connessione (solo TCP)
+
+In UDP, exit chiude il client Java; help è inviato una volta all’avvio per segnalare l'inizio della connessione, ma può essere rimandato.
+
+**LOGGING**
+
+TCP: ad ogni accept(), il server stampa:
+
+    [TCP] Connessione ricevuta da <IP>:<porta>
+
+UDP: ad ogni pacchetto ricevuto, il server stampa:
+
+    [UDP] Richiesta da <IP>:<porta>  comando="<testo_comando>"
+
+**PARSING CSV**
+
+- Delimitatore ;; campi con virgolette gestiti correttamente.
+- Campi vuoti sostituiti con NON_PRESENTE.
+- Header loggata all’avvio con:
+
+
+    → Intestazione CSV: <riga_header>
+    → Caricate X strutture dal CSV.
+
