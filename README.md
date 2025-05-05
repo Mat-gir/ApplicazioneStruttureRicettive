@@ -1,19 +1,17 @@
 # Applicazione Strutture Ricettive
-Versione con supporto TCP interattivo e UDP, logging dettagliato, parsing robusto del CSV e gestione comandi da terminale.
+Versione: supporto TCP interattivo e UDP, logging dettagliato, parsing robusto del CSV e gestione comandi da terminale
 
 **DESCRIZIONE**
 
 Un client–server Java che permette la consultazione remota di un elenco di strutture ricettive (CSV Regione Piemonte). Offre:
 
-- Server TCP interattivo: prompt >>>, comandi help/exit, logging connessioni client (IP, porta).
-- Server UDP frammentato: risposte suddivise in pacchetti da 1024 byte, marcatore __ END __.
-- Client Java multi‐protocollo (TCP/UDP) con invio automatico di help su UDP per generare subito log lato server.
-- Parsing CSV con ; come delimitatore, quote handling, e sostituzione di campi vuoti con NON_PRESENTE.
-- Indicizzazione get_row in input 1-based → 0-based internamente.
+- Server TCP interattivo: prompt >>>, comandi help/exit, logging delle connessioni client (IP, porta)
+- Server UDP frammentato: risposte suddivise in pacchetti da 1024 byte, marcatore __ END __
+- Client Java multi‑protocollo (TCP/UDP) con invio automatico di help su UDP per generare subito log lato server
+- Parsing CSV con ; come delimitatore, gestione delle virgolette, e sostituzione di campi vuoti con NON_PRESENTE
+- Indicizzazione get_row in input 1-based → 0-based internamente
 
 **STRUTTURA DEL PROGETTO**
-
-
 
     src   
         server
@@ -26,8 +24,10 @@ Un client–server Java che permette la consultazione remota di un elenco di str
             Regione-Piemonte---Elenco-delle-strutture-ricettive.csv    
         client
             src
-                ClientStrutture.java
-                GestioneClient.java
+                ClientConnection.java
+                Connection.java
+                MainClient.java
+                UdpClientConnection.java
 
 **COMPLIAZIONE**
 
@@ -43,9 +43,9 @@ Avvio Server
     cd out  
     java server.ServerStrutture [<csvPath>] [<tcpPort>] [<udpPort>]
 
-- csvPath (opzionale): percorso al CSV (default src/server/Regione-Piemonte---Elenco-delle-strutture-ricettive.csv).
-- tcpPort (opzionale): porta TCP (default 1050).
-- udpPort (opzionale): porta UDP (default 3030).
+- csvPath (opzionale): percorso al CSV (default src/server/Regione-Piemonte---Elenco-delle-strutture-ricettive.csv)
+- tcpPort (opzionale): porta TCP (default 1050)
+- udpPort (opzionale): porta UDP (default 3030)
 
 Il server stamperà:
 
@@ -53,9 +53,9 @@ Il server stamperà:
     Porte: TCP=[<tcpPort>]  UDP=[<udpPort>]   
     Server avviato (TCP[<tcpPort>]  UDP[<udpPort>])
 
-CONNESSIONE TCP (Telnet)
+CONNESSIONE TCP
 
-    telnet localhost (o 127.0.0.1) 1050
+    telnet localhost 1050
 
 Il server invia un messaggio di benvenuto e prompt:
 
@@ -63,12 +63,11 @@ Il server invia un messaggio di benvenuto e prompt:
     Digita 'help' per l'elenco comandi, 'exit' per chiudere.    
     >>>
 
-Connessione UDP (Client Java o Netcat)
+Connessione UDP
 
     # con client Java:   
-    cd out    
-    java client.ClientStrutture   
-    # selezionare protocollo udp    
+    cd out
+    java client.ClientStrutture
 
 Il client Java in modalità UDP invia automaticamente help all’avvio per generare subito il logging lato server.
 
@@ -103,7 +102,7 @@ UDP: ad ogni pacchetto ricevuto, il server stampa:
 
 **PARSING CSV**
 
-- Delimitatore ;; campi con virgolette gestiti correttamente.
+- Delimitatore ;, campi con virgolette gestiti correttamente.
 - Campi vuoti sostituiti con NON_PRESENTE.
 - Header loggata all’avvio con:
 
