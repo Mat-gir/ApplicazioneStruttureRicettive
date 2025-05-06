@@ -84,15 +84,17 @@ public class GestoreCSV {
     }
 
     /**
-     * Restituisce la rappresentazione CSV della riga alla posizione indicata.
+     * Restituisce la rappresentazione formattata (toString) della riga alla posizione indicata.
      *
      * @param idx indice (0-based) della struttura
      * @return stringa CSV della struttura o codice di errore se indice non valido
      */
     public String getRiga(int idx) {
-        return (idx >= 0 && idx < strutture.size())
-                ? strutture.get(idx).toCSV()
-                : Protocollo.ERRORE_RIGA;
+        if (idx >= 0 && idx < strutture.size()) {
+            return strutture.get(idx).toString();
+        } else {
+            return Protocollo.ERRORE_RIGA;
+        }
     }
 
     /**
